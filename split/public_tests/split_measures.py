@@ -22,5 +22,11 @@ def evaluate_measures(sample):
     }
 
     """
-    measures = {'gini': float(len(sample)), 'entropy': float(sum(sample)), 'error': float(max(sample))}
+    classes, counts = np.unique(sample, return_counts=True)
+    p = counts / len(sample)
+    c = classes[np.argmax(counts)]
+    error = (sample != c).sum() / len(sample)
+    entropy = -(p * np.log(p)).sum()
+    gini = (p*(1-p)).sum()
+    measures = {'gini': gini, 'entropy': entropy, 'error': error}
     return measures

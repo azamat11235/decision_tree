@@ -8,3 +8,4 @@ def test_metrics():
     answer = {'gini': 0.7187, 'entropy': 1.3208, 'error': 0.625}
     for key in answer:
         assert np.abs(answer[key] - measures[key]) < 0.001
+

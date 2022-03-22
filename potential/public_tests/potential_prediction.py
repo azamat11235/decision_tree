@@ -2,6 +2,7 @@ import os
 
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.pipeline import Pipeline
+from sklearn.ensemble import ExtraTreesRegressor
 
 import numpy as np
 
@@ -11,7 +12,46 @@ class PotentialTransformer:
 
     This class is used to convert the potential's 2d matrix to 1d vector of features.
     """
+    
+    def _h(self, img):
+        argmin = img.argmin()
+        m = img[argmin//img.shape[1], argmin%img.shape[1]]
+        row = img[argmin//img.shape[1]]
+        m = argmin%img.shape[1] + row[row==m].shape[0]//2
+        c = img.shape[1]//2
+        if m > c:
+            for i in range(256):
+                if i <= 256-m+c-1:
+                    img[:, i] = img[:, i+m-c]
+                else:
+                    img[:, i] = img[:, -i]
+        elif m < c:
+            for i in range(255, -1, -1):
+                if i-(c-m) >= 0:
+                    img[:, i] = img[:, i-(c-m)]
+                else:
+                    img[:, i] = img[:, -i]
 
+    def _v(self, img):
+        argmin = img.argmin()
+        m = img[argmin//img.shape[1], argmin%img.shape[1]]
+        col = img[:, argmin%img.shape[1]]
+        m = argmin//img.shape[1] + col[col==m].shape[0]//2
+        c = img.shape[0]//2
+        if m > c:
+            for i in range(256):
+                if i <= 256-m+c-1:
+                    img[i, :] = img[i+m-c, :]
+                else:
+                    img[i, :] = img[-i, :]
+
+        elif m < c:
+            for i in range(255, -1, -1):
+                if i-(c-m) >= 0:
+                    img[i, :] = img[i-(c-m), :]
+                else:
+                    img[i, :] = img[-i, :]
+                    
     def fit(self, x, y):
         """
         Build the transformer on the training set.
@@ -36,6 +76,9 @@ class PotentialTransformer:
         :param x: list of potential's 2d matrices
         :return: transformed potentials (list of 1d vectors)
         """
+        for xi in x:
+            self._h(xi)
+            self._v(xi)
         return x.reshape((x.shape[0], -1))
 
 def load_dataset(data_dir):
@@ -61,7 +104,7 @@ def train_model_and_predict(train_dir, test_dir):
     _, X_train, Y_train = load_dataset(train_dir)
     test_files, X_test, _ = load_dataset(test_dir)
     # it's suggested to modify only the following line of this function
-    regressor = Pipeline([('vectorizer', PotentialTransformer()), ('decision_tree', DecisionTreeRegressor())])
+    regressor = Pipeline([('vectorizer', PotentialTransformer()), ('decision_tree', ExtraTreesRegressor(criterion='mae', n_estimators=2600, max_features=X_train.shape[1]//8, random_state=42))])
     regressor.fit(X_train, Y_train)
     predictions = regressor.predict(X_test)
     return {file: value for file, value in zip(test_files, predictions)}

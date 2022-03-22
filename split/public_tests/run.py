@@ -55,7 +55,7 @@ if __name__ == '__main__':
     else:
         # Script is running locally
 
-        test_dir = glob(f'public_tests/[0-9][0-9]_unittest_split_input')
+        test_dir = glob(f'[0-9][0-9]_unittest_split_input')
         if not test_dir:
             print('Test not found')
             exit(0)
